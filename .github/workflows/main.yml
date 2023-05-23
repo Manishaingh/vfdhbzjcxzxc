@@ -1,0 +1,49 @@
+name: Windows RDP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Ngrok
+        uses: ngrok/action@master
+        with:
+          authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
+          region: us
+          port: 3389
+
+      - name: Install RDP dependencies
+        run: |
+          choco install rdcman -y
+          choco install rdpwrap -y
+          choco install openssh -y
+
+      - name: Enable RDP
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+          Set-RDPConfiguration -Set 'AllowTSConnections' -Value 1
+          Set-RDPConfiguration -Set 'EnableCredSspSupport' -Value 1
+          Add-RDPFirewallRule
+          Set-RDPPasswordAuthentication -Enable
+          Set-RDPClientExperience -DisableMenuAnimations -DisableTheming -DisableWallpaper -EnableFontSmoothing
+          Set-RDPProperties -PropertyType Client -Name authentication level -Value 2
+          Set-RDPProperties -PropertyType Server -Name UserAuthentication -Value 1
+          Set-RDPProperties -PropertyType Server -Name RestrictedAdminModeRequired -Value 0
+          Set-RDPProperties -PropertyType Server -Name Enabled -Value 1
+          Set-RDPProperties -PropertyType Server -Name RdpGuard_PreferredSecurityLayer -Value 2
+          Add-RDPFirewallRule
+
+      - name: Display RDP information
+        run: |
+          echo "Windows RDP has been set up successfully!"
+          echo "Specifications:"
+          echo "RAM: Up to 32 GB"
+          echo "Processor: Intel Core i7 or i5"
